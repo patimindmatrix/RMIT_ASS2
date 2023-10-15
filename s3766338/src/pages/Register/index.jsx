@@ -13,6 +13,7 @@ import {messageAuth, typeLocal} from "../../constants/index.js";
 import { toast } from 'react-toastify';
 import {NavLink, useNavigate} from "react-router-dom";
 import { uid } from 'react-uid';
+import axios from 'axios';
 const schema = yup
   .object({
     username: yup.string().required(),
@@ -30,26 +31,37 @@ const RegisterPage = () => {
     resolver: yupResolver(schema),
   })
   const onSubmit = (data) => {
-    console.log(data)
+    // console.log(data)
 
-    const listAccount =
-      localStorage.getItem(typeLocal.ACCOUNTS) ?
-    JSON.parse(localStorage.getItem(typeLocal.ACCOUNTS)) : []
-    const index = listAccount.findIndex(item => item.email === data.email)
-    if(index !== -1) {
+    // const listAccount =
+    //   localStorage.getItem(typeLocal.ACCOUNTS) ?
+    // JSON.parse(localStorage.getItem(typeLocal.ACCOUNTS)) : []
+    // const index = listAccount.findIndex(item => item.email === data.email)
+    // if(index !== -1) {
+    //   toast.error(messageAuth.REGISTER_EXITS)
+    //   return
+    // }
+    // const newAccount = {
+    //   ...data,
+    //   created_at: new Date(),
+    //   _id: uid(data.email)
+    // }
+    // listAccount.push(newAccount)
+    // localStorage.setItem(typeLocal.ACCOUNTS, JSON.stringify(listAccount))
+    // localStorage.setItem(typeLocal.ACCOUNT_LOGIN, JSON.stringify(newAccount))
+    // toast.success(messageAuth.REGISTER_SUCCESS)
+    // navigate('/profile')
+
+    axios.post('http://localhost:3001/users', data).then((response) => {
+      if (response.status === 201){
+        console.log(1)
+        localStorage.setItem(typeLocal.ACCOUNT_LOGIN, JSON.stringify(response.data))
+        toast.success(messageAuth.REGISTER_SUCCESS)
+        navigate('/profile')
+      }
+    }).catch(error => {
       toast.error(messageAuth.REGISTER_EXITS)
-      return
-    }
-    const newAccount = {
-      ...data,
-      created_at: new Date(),
-      _id: uid(data.email)
-    }
-    listAccount.push(newAccount)
-    localStorage.setItem(typeLocal.ACCOUNTS, JSON.stringify(listAccount))
-    localStorage.setItem(typeLocal.ACCOUNT_LOGIN, JSON.stringify(newAccount))
-    toast.success(messageAuth.REGISTER_SUCCESS)
-    navigate('/profile')
+    })
   }
   return (
     <Box>

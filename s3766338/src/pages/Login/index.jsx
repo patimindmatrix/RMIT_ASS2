@@ -1,6 +1,7 @@
-import * as React from 'react';
+import { useEffect } from 'react';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
+import axios from 'axios';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
@@ -21,6 +22,11 @@ const schema = yup
   })
   .required()
 const LoginPage = () => {
+  useEffect(() => {
+    axios.get("http://localhost:3001/users").then((response) => {
+      console.log(response.data)
+    })
+  }, [])
   const {
     register,
     handleSubmit,
@@ -30,18 +36,27 @@ const LoginPage = () => {
   })
   const navigate = useNavigate()
   const onSubmit = (data) => {
-    console.log(data)
-    const listAccount =
-      localStorage.getItem(typeLocal.ACCOUNTS) ?
-        JSON.parse(localStorage.getItem(typeLocal.ACCOUNTS)) : []
-    const index = listAccount.findIndex(item => item.email === data.email && item.password === data.password)
-    if(index === -1) {
+    // const listAccount =
+    //   localStorage.getItem(typeLocal.ACCOUNTS) ?
+    //     JSON.parse(localStorage.getItem(typeLocal.ACCOUNTS)) : []
+    // const index = listAccount.findIndex(item => item.email === data.email && item.password === data.password)
+    // if(index === -1) {
+    //   toast.error(messageAuth.LOGIN_ERROR)
+    //   return
+    // }
+    // toast.success(messageAuth.LOGIN_SUCCESS)
+    // localStorage.setItem(typeLocal.ACCOUNT_LOGIN, JSON.stringify(listAccount[index]))
+    axios.post('http://localhost:3001/users/login', data).then((response) => {
+      console.log(response.status)
+      if (response.status === 200){
+        toast.success(messageAuth.LOGIN_SUCCESS)
+        localStorage.setItem(typeLocal.ACCOUNT_LOGIN, JSON.stringify(response.data))
+        navigate('/profile')
+      }
+    }).catch(error => {
       toast.error(messageAuth.LOGIN_ERROR)
-      return
-    }
-    toast.success(messageAuth.LOGIN_SUCCESS)
-    localStorage.setItem(typeLocal.ACCOUNT_LOGIN, JSON.stringify(listAccount[index]))
-    navigate('/profile')
+    })
+    
   }
 
   return (

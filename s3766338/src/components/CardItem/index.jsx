@@ -1,85 +1,77 @@
-import * as React from 'react';
-import Card from '@mui/material/Card';
-import CardActions from '@mui/material/CardActions';
-import CardContent from '@mui/material/CardContent';
-import CardMedia from '@mui/material/CardMedia';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import {useEffect, useState} from "react";
-import {Dialog, DialogContent, DialogTitle, Rating} from "@mui/material";
+import * as React from "react";
+import Card from "@mui/material/Card";
+import CardActions from "@mui/material/CardActions";
+import CardContent from "@mui/material/CardContent";
+import CardMedia from "@mui/material/CardMedia";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
+import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogTitle, Rating } from "@mui/material";
 import Box from "@mui/material/Box";
-import {toast} from "react-toastify";
-import {isEmptyObject, typeLocal} from "../../constants/index.js";
-import { v4 as uuidv4 } from 'uuid';
+import { toast } from "react-toastify";
+import { isEmptyObject, typeLocal } from "../../constants/index.js";
+import { v4 as uuidv4 } from "uuid";
+import axios from "axios";
 
 export default function CardItem(props) {
-  const [open, setOpen] = useState(false)
- const [value, setValue] = useState(2)
-  const [comment, setComment]= useState('')
-  const [openList, setOpenList] = useState(false)
-  const [listCommentMovie, setListCommentMovie] = useState([])
-  const { movie, profile } = props
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(2);
+  const [comment, setComment] = useState("");
+  const [openList, setOpenList] = useState(false);
+  const { movie, profile } = props;
+  const [movieList, setMovieList] = useState([]);
 
-  useEffect(() => {
-    const listComment = JSON.parse(localStorage.getItem(typeLocal.LIST_COMMENT)) || {}
-    setListCommentMovie(listComment[movie.id] || {})
-  }, [openList])
+  const handleOpenList = () => {
+    setOpenList(!openList);
+    axios
+      .get(`http://localhost:3001/comments/${movie.id}`)
+      .then((response) => {
+        setMovieList(response.data);
+        console.log(movieList);
+      })
+      .catch((error) => toast.error("Cannot fetch the comments"));
+  };
 
   const handleClose = () => {
-    setOpen(false)
-  }
+    setOpen(false);
+  };
   const handleCloseList = () => {
-    setOpenList(false)
-  }
+    setOpenList(false);
+  };
   const handleSubmitComment = () => {
-    if(comment === '') {
-      toast.error('Comment can not be empty')
-      return
-    }
-    else if(comment.length > 250) {
-      toast.error('Comment can not have more than 250 words')
-      return
+    if (comment === "") {
+      toast.error("Comment can not be empty");
+      return;
+    } else if (comment.length > 250) {
+      toast.error("Comment can not have more than 250 words");
+      return;
     }
     const newComment = {
-      movie_id : movie.id,
+      movie_id: movie.id,
       rate: value,
       message: comment,
-      user: profile,
-      id: uuidv4()
-    }
-    const listComment = JSON.parse(localStorage.getItem(typeLocal.LIST_COMMENT)) || {}
-    if(!listComment[movie.id]) {
-      const data = {
-        comments: [newComment],
-        total: value
-      }
-      listComment[movie.id] = data
-      localStorage.setItem(typeLocal.LIST_COMMENT, JSON.stringify(listComment))
-    }
-    else {
-      let data = listComment[movie.id]
-      data = {
-        ...data,
-        comments: [...data.comments, newComment],
-        total: data.total + value
-      }
-      listComment[movie.id] = data
-      localStorage.setItem(typeLocal.LIST_COMMENT, JSON.stringify(listComment))
-    }
-    setOpen(false)
-    toast.success('You have review successful')
-  }
+      user: profile.username,
+    };
+    axios
+      .post("http://localhost:3001/comments", newComment)
+      .then((response) => {
+        console.log(response.status);
+      })
+      .catch((error) => {
+        toast.error("Fail to review");
+      });
+    setOpen(false);
+    toast.success("You have review successful");
+  };
   const removeComment = (comment) => {
-      const index = listCommentMovie.comments.findIndex((item) => item.id === comment.id)
-      const newComments = [...listCommentMovie.comments]
-      newComments.splice(index, 1)
-      const newComment ={...listCommentMovie, comments: newComments}
-      setListCommentMovie(newComment)
-      const listComment = JSON.parse(localStorage.getItem(typeLocal.LIST_COMMENT)) || {}
-      listComment[movie.id] = newComment
-      localStorage.setItem(typeLocal.LIST_COMMENT, JSON.stringify(listComment))
-      toast.success('You have deleted review')
-  }
+    axios.delete(`http://localhost:3001/comments/delete/${comment.id}`)
+    .then((response) => {
+      toast.success("You have deleted review");
+      handleOpenList()
+    })
+    .catch(error => toast.error("Delete fail"))
+    
+  };
   return (
     <>
       <Card sx={{ maxWidth: 345 }}>
@@ -89,7 +81,12 @@ export default function CardItem(props) {
           title="green iguana"
         />
         <CardContent>
-          <Typography gutterBottom variant="h6" component="div" className="t-ellipsis-1">
+          <Typography
+            gutterBottom
+            variant="h6"
+            component="div"
+            className="t-ellipsis-1"
+          >
             {movie.title}
           </Typography>
           <div className="t-ellipsis-3">
@@ -99,10 +96,17 @@ export default function CardItem(props) {
           </div>
         </CardContent>
         <CardActions>
-          <Button onClick={() => {
-            setOpen(true)
-          }} size="small">Review</Button>
-          <Button size="small" onClick={() => setOpenList(true)}>Review Lists</Button>
+          <Button
+            onClick={() => {
+              setOpen(true);
+            }}
+            size="small"
+          >
+            Review
+          </Button>
+          <Button size="small" onClick={() => handleOpenList()}>
+            Review Lists
+          </Button>
         </CardActions>
       </Card>
       <Dialog onClose={handleClose} open={open}>
@@ -110,7 +114,7 @@ export default function CardItem(props) {
         <DialogContent>
           <Box
             sx={{
-              '& > legend': { mt: 2 },
+              "& > legend": { mt: 2 },
             }}
           >
             <Rating
@@ -121,14 +125,14 @@ export default function CardItem(props) {
               }}
             />
           </Box>
-          <Box sx={{marginTop:2}}>
+          <Box sx={{ marginTop: 2 }}>
             <textarea
               value={comment}
               onChange={(event) => setComment(event.target.value)}
               placeholder="New Review"
             />
           </Box>
-          <Box sx={{marginTop:2}}>
+          <Box sx={{ marginTop: 2 }}>
             <Button onClick={handleSubmitComment}>Comment</Button>
           </Box>
         </DialogContent>
@@ -137,48 +141,50 @@ export default function CardItem(props) {
         onClose={handleCloseList}
         open={openList}
         PaperProps={{
-            sx: {
-              width: "100%",
-              minWidth: "720px!important",
-            },
-          }}
+          sx: {
+            width: "100%",
+            minWidth: "720px!important",
+          },
+        }}
       >
         <DialogTitle>Review Lists</DialogTitle>
         <DialogContent>
           <div className="scroll-list">
-            {!listCommentMovie ||  isEmptyObject(listCommentMovie) ||  (listCommentMovie &&listCommentMovie.comments && !listCommentMovie.comments.length) ? <h3> No reviews</h3> : null }
-            {listCommentMovie && listCommentMovie.comments &&
-              listCommentMovie.comments.map((comment, index) => (
+            {!movieList ? (
+              <h3> No reviews</h3>
+            ) : null}
+            {movieList &&
+              movieList.map((comment, index) => (
                 <div key={index} className="comment-item">
                   <div className="comment-item-image">
-                    <img src="https://mymoonlight.vercel.app/me.jpg" alt=""/>
+                    <img src="https://mymoonlight.vercel.app/me.jpg" alt="" />
                   </div>
                   <div className="flex-1">
                     <div>
-                     <div className="context">
-                       <h3 className="comment-item-title">{comment.user.username}</h3>
-                       <Rating
-                         name="simple-controlled"
-                         value={Number(comment.rate)}
-                         readOnly
-                       />
-                     </div>
-                    <div className="action-comment">
-                      <p className="comment-item-desciption">
-                        {comment.message}
-                      </p>
-                      {
-                        profile._id === comment.user._id &&
-                        <div>
-                          <span onClick={() => removeComment(comment)}>Xóa</span>
-                        </div>
-                      }
-                    </div>
+                      <div className="context">
+                        <h3 className="comment-item-title">{comment.user}</h3>
+                        <Rating
+                          name="simple-controlled"
+                          value={Number(comment.rate)}
+                          readOnly
+                        />
+                      </div>
+                      <div className="action-comment">
+                        <p className="comment-item-desciption">
+                          {comment.message}
+                        </p>
+                        {profile.username === comment.user && (
+                          <div>
+                            <span onClick={() => removeComment(comment)}>
+                              Xóa
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))
-            }
+              ))}
           </div>
         </DialogContent>
       </Dialog>
